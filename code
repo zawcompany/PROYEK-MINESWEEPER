@@ -1,0 +1,191 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+//mendefinisikan banyak baris, kolom, dan bom
+#define BARIS 8
+#define KOLOM 8
+#define BOM 10
+
+//menggunakan array bertipe char untuk membuat grid & isi
+char kotak[BARIS][KOLOM];
+char tampilkan[BARIS][KOLOM];
+
+//prosedur untuk mengatur aturan isi grid
+void aturan_kotak() {
+    int i, j;
+
+    for (i = 0; i < BARIS; i++) {
+        for (j = 0; j < KOLOM; j++) {
+            kotak[i][j] = ' ';
+            tampilkan[i][j] = ' ';
+        }
+    }
+}
+
+//prosedur untuk mencetak grid
+void cetak_kotak() {
+    int i, j;
+
+    printf("\n   ");
+    for (i = 0; i < KOLOM; i++)
+        printf("[%d]", i);
+    printf("\n");
+
+    for (i = 0; i < BARIS; i++) {
+        printf("[%d]", i);
+        for (j = 0; j < KOLOM; j++) {
+            printf(" %c ", tampilkan[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+//prosedur untuk memasang bom secara acak
+void pasang_bom() {
+    int i, j, hitung = 0;
+
+    while (hitung < BOM) {
+        i = rand() % BARIS; //menentukan titik baris acak untuk memasang bom
+        j = rand() % KOLOM; //mementukan titik kolom acak untuk memasang bom
+
+        if (kotak[i][j] != '*') {
+            kotak[i][j] = '*';
+            hitung++;
+        }
+    }
+}
+
+//fungsi untuk menghitung bom sekitar kotak
+int hitung_bom_sekitar(int baris, int kolom) {
+    int bom_sekitar = 0;
+    for (int i = baris - 1; i <= baris + 1; i++) {
+        for (int j = kolom - 1; j <= kolom + 1; j++) {
+            if (i >= 0 && i < BARIS && j >= 0 && j < KOLOM && kotak[i][j] == '*') {
+                bom_sekitar++;
+            }
+        }
+    }
+    return bom_sekitar;
+}
+
+//prosedur untuk mengisi kotak yang tidak berisi bom
+void penomoran() {
+    int i, j;
+    for (i = 0; i < BARIS; i++) {
+        for (j = 0; j < KOLOM; j++) {
+            if (kotak[i][j] != '*') {
+                kotak[i][j] = hitung_bom_sekitar(i, j) + '0';
+            }
+        }
+    }
+}
+
+void tampilkan_isi(int a, int b) {
+    if (a < 0 || a >= BARIS || b < 0 || b >= KOLOM)
+        return;
+
+    if (tampilkan[a][b] != ' ')
+        return;
+
+    tampilkan[a][b] = kotak[a][b];
+
+    if (kotak[a][b] != '0')
+        return;
+
+    //perhitungan untuk menampilkan area di sekitar kotak '0' sampai bertemu dengan kotak yang berisi angka atau bom
+    tampilkan_isi(a - 1, b - 1);
+    tampilkan_isi(a - 1, b);
+    tampilkan_isi(a - 1, b + 1);
+    tampilkan_isi(a, b - 1);
+    tampilkan_isi(a, b + 1);
+    tampilkan_isi(a + 1, b - 1);
+    tampilkan_isi(a + 1, b);
+    tampilkan_isi(a + 1, b + 1);
+}
+
+// Prosedur untuk mengungkapkan semua lokasi bom setelah pemain menang
+void reveal_bom() {
+    for (int i = 0; i < BARIS; i++) {
+        for (int j = 0; j < KOLOM; j++) {
+            if (kotak[i][j] == '*') {
+                tampilkan[i][j] = '*';
+            }
+        }
+    }
+    cetak_kotak();
+}
+
+
+//fungsi untuk memeriksa apakah semua kotak tanpa bom telah terungkap atau tidak
+int check() {
+    for (int i = 0; i < BARIS; i++) {
+        for (int j = 0; j < KOLOM; j++) {
+            if (kotak[i][j] != '*' && tampilkan[i][j] == ' ')
+                return 0; //kode if (check()) akan dibaca false (tidak dieksekusi)
+        }
+    }
+    return 1; //kode if (check()) akan dibaca true (akan dieksekusi)
+}
+
+int main(){
+    srand(time(NULL)); //fungsi untuk mendapatkan urutan bilangan acak yang berbeda untuk titik pemasangan bom
+
+    printf("---------------------------\n");
+    printf("<LET'S  PLAY  MINES-WEEPER>\n");
+
+    aturan_kotak();
+    pasang_bom();
+    penomoran();
+
+    int a, b;
+    char kode;
+
+    do {
+        cetak_kotak();
+        printf("---------------------------");
+        printf("\nMasukkan kode permainan (r = reveal / k = keluar): ");
+        scanf(" %c", &kode);
+
+        switch (kode){
+        case 'r':
+            printf("Masukkan baris: ");
+            scanf("%d", &a);
+
+            printf("Masukkan kolom: ");
+            scanf("%d", &b);
+
+            if (kotak[a][b] == '*') {
+                printf("-----------------------------------------------------\n");
+                tampilkan[a][b] = '*';
+                cetak_kotak();
+                printf("\n<GAME OVER!! Kamu meledakkan bomnya!!>");
+                printf("\n-----------------------------------------------------");
+                break;
+            } else {
+                printf("-----------------------------------------------------\n");
+                tampilkan_isi(a, b);
+                if (check()) {
+                    reveal_bom();
+                    printf("\n<YOU WIN!! Selamat kamu telah menang!!>");
+                    printf("\n-----------------------------------------------------");
+                    break;
+                }
+            }
+        case 'k':
+            
+            break;
+
+        default:
+            printf("\nERROR: Kode tidak valid. Tolong masukkan 'r' untuk reveal atau 'k' untuk keluar dari game");
+            printf("\n-----------------------------------------------------------------------------------------\n");
+            break;
+        }
+        
+
+    } while (kode != 'k');
+
+    printf("\nTerima kasih telah memainkan games kami kami!!\n");
+
+    return 0;
+}
